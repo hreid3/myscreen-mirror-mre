@@ -27,7 +27,6 @@ const screenTypeMapping: Record<ScreenType, string> = {
  */
 export default class App {
 	private assets: MRE.AssetContainer;
-	private ignoreClicks = false;
 	private initialized = false;
 
 	constructor(private context: MyScreenContext, private parameterSet: MRE.ParameterSet) {
