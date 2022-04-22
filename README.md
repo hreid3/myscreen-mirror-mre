@@ -1,5 +1,5 @@
-# Karaoke queue
-Karaoke Queue
+# My Screen Mirror MRE
+Toggles between 3D and 2D screen by just clicking the screen.
 
 ## Install
 ```
