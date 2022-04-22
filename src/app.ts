@@ -6,8 +6,10 @@
 import * as MRE from "@microsoft/mixed-reality-extension-sdk";
 import debounce from "lodash.debounce";
 import block from "./block";
+import {ParameterSet} from "@microsoft/mixed-reality-extension-sdk";
 type ScreenType = '3D' | '2D';
-type MyScreenUser = MRE.User & {
+type MyScreenUser = MRE.User;
+type MyScreenContext = MRE.Context & {
 	screen3D?: MRE.Actor;
 	screen2D?: MRE.Actor;
 	activeScreen?: ScreenType;
@@ -28,10 +30,10 @@ export default class App {
 	private ignoreClicks = false;
 	private initialized = false;
 
-	constructor(private context: MRE.Context, private parameterSet: MRE.ParameterSet) {
-		console.log("constructed", this.context.sessionId);
+	constructor(private context: MyScreenContext, private parameterSet: MRE.ParameterSet) {
+		console.log(this.context.sessionId, "constructed");
 		this.assets = new MRE.AssetContainer(context);
-		this.context.onStarted( () => this.started());
+		this.context.onStarted( () => this.started(parameterSet));
 		this.context.onStopped(this.stopped);
 		this.context.onUserLeft( (user) => this.handleUserLeft(user));
 		this.context.onUserJoined(async (user) => await this.handleUserJoined(user));
@@ -41,68 +43,78 @@ export default class App {
 		if (!this.initialized) {
 			await block(() => this.initialized, 15000);
 		}
-		// We need to setup the screens
-		user.screen2D = await this.getMirror(user, "2D");
-		user.screen3D = await this.getMirror(user, "3D");
-		this.activate3DScreen(user);
-		// turn on the default
-	};
+		this.attachBehaviors();
+	}
 	private debounceClick = (callbackFn: any) => debounce(callbackFn, 1000, {
 		leading: true, trailing: false
 	});
-	private activate3DScreen = (user: MyScreenUser) => {
-		user.activeScreen = '3D';
-		user.screen3D.appearance.enabled = true;
-		user.screen3D.setBehavior(MRE.ButtonBehavior).onClick(this.debounceClick(this.handleScreenClicked))
-		user.screen2D.appearance.enabled = false;
-		user.screen2D.setBehavior(null);
-	}
-	private activate2DScreen = (user: MyScreenUser) => {
-		user.activeScreen = '2D';
-		user.screen3D.appearance.enabled = false;
-		user.screen2D.setBehavior(MRE.ButtonBehavior).onClick(this.debounceClick(this.handleScreenClicked))
-		user.screen3D.setBehavior(null);
-		user.screen2D.appearance.enabled = true;
-	}
-	private handleScreenClicked = (user: MyScreenUser) => {
-		if (user.activeScreen === "3D") {
-			this.activate2DScreen(user);
+	private attachBehaviors = () => {
+		if (this.context.activeScreen === "2D") {
+			this.context.screen3D.setBehavior(MRE.ButtonBehavior).onClick(this.debounceClick(this.handleScreenClicked))
+			this.context.screen2D.setBehavior(null);
 		} else {
-			this.activate3DScreen(user);
+			this.context.screen2D.setBehavior(MRE.ButtonBehavior).onClick(this.debounceClick(this.handleScreenClicked))
+			this.context.screen3D.setBehavior(null);
+		}
+	}
+	private activate3DScreen = () => {
+		this.context.activeScreen = '3D';
+		this.context.screen3D.appearance.enabled = true;
+		this.context.screen2D.appearance.enabled = false;
+		this.attachBehaviors();
+		console.log(this.context.sessionId, "Showing Screen:", this.context.activeScreen)
+	}
+	private activate2DScreen = () => {
+		this.context.activeScreen = '2D';
+		this.context.screen3D.appearance.enabled = false;
+		this.context.screen2D.appearance.enabled = true;
+		this.attachBehaviors();
+		console.log(this.context.sessionId, "Showing Screen:", this.context.activeScreen)
+	}
+	private handleScreenClicked = () => {
+		if (this.context.activeScreen === "3D") {
+			this.activate2DScreen();
+		} else {
+			this.activate3DScreen();
 		}
 	}
 
 	// eslint-disable-next-line @typescript-eslint/require-await
-	private getMirror = async (user: MyScreenUser, screenType: ScreenType) => {
+	private getMirror = async (screenType: ScreenType) => {
 		const lib = MRE.Actor.CreateFromLibrary(this.context, {
 			resourceId: `artifact:${screenTypeMapping[screenType]}`,
 			actor: {
-				name: `mirror-${screenType}-${user.id.toString()}`,
+				name: `mirror-${screenType}`,
 				appearance: {enabled: false,},
-				exclusiveToUser: user.id,
 				collider: {geometry: {shape: MRE.ColliderType.Box},},
 			}
 		});
 		return lib;
 	}
 	private handleUserLeft = (user: MyScreenUser) => {
-		user.screen3D?.setBehavior(null);
-		user.screen3D?.destroy();
-		user.screen3D = undefined;
-		user.screen2D?.setBehavior(null);
-		user.screen2D?.destroy();
-		user.screen2D = undefined;
 	};
 
-	private started = () => {
-		console.log("App Started");
+	private started = async (params: ParameterSet) => {
+		console.log(this.context.sessionId, "App Started");
+		this.context.screen2D = await this.getMirror("2D");
+		this.context.screen3D = await this.getMirror( "3D");
+		this.context.activeScreen = (params?.screen || process.env.screen || '3D') as ScreenType
+		console.log(this.context.sessionId, "Default Screen:", this.context.activeScreen)
+		if (this.context.activeScreen === "2D") {
+			this.activate2DScreen();
+		} else {
+			this.activate3DScreen();
+		}
 		this.initialized = true;
 	};
 
 	private stopped = () => {
-		for(const user of this.context.users as MyScreenUser[]) {
-			this.handleUserLeft(user);
-		}
-		console.log("App Stopped");
+		this.context.screen3D?.setBehavior(null);
+		this.context.screen3D?.destroy();
+		this.context.screen3D = undefined;
+		this.context.screen2D?.setBehavior(null);
+		this.context.screen2D?.destroy();
+		this.context.screen2D = undefined;
+		console.log(this.context.sessionId, "App Stopped");
 	};
 }
