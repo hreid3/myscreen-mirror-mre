@@ -15,8 +15,8 @@
     "node"
   ],
   "engines": {
-    "node": ">=10.16.0",
-    "npm": ">=6.4.1"
+    "node": "16.x",
+    "npm": "8.x"
   },
   "author": "Horace Reid III",
   "license": "MIT",
