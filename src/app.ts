@@ -86,10 +86,12 @@ export default class App {
 		return lib;
 	}
 	private handleUserLeft = (user: MyScreenUser) => {
-		user.screen3D?.destroy();
 		user.screen3D?.setBehavior(null);
-		user.screen2D?.destroy();
+		user.screen3D?.destroy();
+		user.screen3D = undefined;
 		user.screen2D?.setBehavior(null);
+		user.screen2D?.destroy();
+		user.screen2D = undefined;
 	};
 
 	private started = () => {
