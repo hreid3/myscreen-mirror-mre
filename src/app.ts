@@ -31,9 +31,9 @@ export default class App {
 	constructor(private context: MRE.Context, private parameterSet: MRE.ParameterSet) {
 		console.log("constructed", this.context.sessionId);
 		this.assets = new MRE.AssetContainer(context);
-		this.context.onStarted( () =>  this.started());
+		this.context.onStarted( () => this.started());
 		this.context.onStopped(this.stopped);
-		this.context.onUserLeft( (user) =>  this.handleUserLeft(user));
+		this.context.onUserLeft( (user) => this.handleUserLeft(user));
 		this.context.onUserJoined(async (user) => await this.handleUserJoined(user));
 	}
 
