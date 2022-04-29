@@ -70,11 +70,27 @@ export default class App {
 		this.attachBehaviors();
 		console.log(this.context.sessionId, "Showing Screen:", this.context.activeScreen)
 	}
-	private handleScreenClicked = () => {
-		if (this.context.activeScreen === "3D") {
-			this.activate2DScreen();
-		} else {
-			this.activate3DScreen();
+
+	private isUserElevated(user: MyScreenUser) {
+		console.log(user.properties['altspacevr-roles']);
+		const terraformer = (user.properties['altspacevr-roles'].includes('terraformer'));
+		const host = (user.properties['altspacevr-roles'].includes('host'));
+		const moderator = (user.properties['altspacevr-roles'].includes('moderator'));
+		return moderator || host || terraformer;
+	}
+	private handleScreenClicked = (user: MyScreenUser) => {
+		const processClick = () => {
+			if (this.context.activeScreen === "3D") {
+				this.activate2DScreen();
+			} else {
+				this.activate3DScreen();
+			}
+		}
+		if ((this.parameterSet?.elevatedRoles === 'y'
+			|| !this.parameterSet?.elevatedRoles) && this.isUserElevated(user)) {
+			processClick();
+		} else if (this.parameterSet?.elevatedRoles === 'n') {
+			processClick();
 		}
 	}
 
@@ -94,7 +110,7 @@ export default class App {
 	};
 
 	private started = async (params: ParameterSet) => {
-		console.log(this.context.sessionId, "App Started");
+		console.log(this.context.sessionId, "App Started". params);
 		this.context.screen2D = await this.getMirror("2D");
 		this.context.screen3D = await this.getMirror( "3D");
 		this.context.activeScreen = (params?.screen || process.env.screen || '3D') as ScreenType

@@ -1,6 +1,6 @@
 {
   "name": "myscreen-mirror-mre",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Loads MyScreen 3D or 2D mirrors into altspace worlds",
   "main": "built/server.js",
   "repository": {
