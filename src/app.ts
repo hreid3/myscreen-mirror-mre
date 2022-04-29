@@ -110,7 +110,7 @@ export default class App {
 	};
 
 	private started = async (params: ParameterSet) => {
-		console.log(this.context.sessionId, "App Started". params);
+		console.log(this.context.sessionId, "App Started", params);
 		this.context.screen2D = await this.getMirror("2D");
 		this.context.screen3D = await this.getMirror( "3D");
 		this.context.activeScreen = (params?.screen || process.env.screen || '3D') as ScreenType
